@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 const fs = require("fs");
 const os = require("os");
 const { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder, ActivityType } = require("discord.js");
@@ -94,12 +94,10 @@ client.on("interactionCreate", async (i) => {
 });
 
 distube
-  .on("playSong", (q, s) => q.textChannel?.send(`🎵 يشتغل الحين: **${s.name}** (${s.formattedDuration})`).catch(() => {}))
-  .on("addSong", (q, s) => { if (q.songs.length > 1) q.textChannel?.send(`➕ انضافت للقائمة: **${s.name}**`).catch(() => {}); })
-  .on("error", (err, q) => q?.textChannel?.send(`⚠️ خطأ: ${err.message?.slice(0, 150)}`).catch(() => {}));
+  .on("playSong", (q, s) => { if (q.textChannel) q.textChannel.send(`🎵 يشتغل الحين: **${s.name}** (${s.formattedDuration})`).catch(() => {}); })
+  .on("addSong", (q, s) => { if (q.songs.length > 1 && q.textChannel) q.textChannel.send(`➕ انضافت للقائمة: **${s.name}**`).catch(() => {}); })
+  .on("error", (err, q) => { console.error(err); if (q?.textChannel) q.textChannel.send(`⚠️ خطأ: ${err.message?.slice(0, 150)}`).catch(() => {}); });
 
-process.on("unhandledRejection", () => {});
-process.on("uncaughtException", () => {});
 async function shutdown() { try { distube.voices.collection.forEach(v => v.leave()); await client.destroy(); } catch {} process.exit(0); }
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
