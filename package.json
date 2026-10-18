@@ -1,0 +1,23 @@
+{
+  "name": "my-music-bot",
+  "version": "2.0.0",
+  "main": "manager.js",
+  "scripts": {
+    "start": "node manager.js",
+    "bot": "node index.js"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.0",
+    "@distube/direct-link": "^1.0.0",
+    "@distube/soundcloud": "^2.0.0",
+    "@distube/yt-dlp": "^2.0.0",
+    "@snazzah/davey": ">=0.1.0",
+    "discord.js": "^14.16.0",
+    "distube": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.13",
+    "opusscript": "^0.1.1"
+  }
+}

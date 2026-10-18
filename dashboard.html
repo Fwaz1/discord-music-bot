@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة تحكم البوت - iron monkey</title>
+<style>
+  :root { color-scheme: dark; --bg:#0f1015; --card:#181a22; --line:#2a2e3d; --text:#eceef4; --mute:#8b90a3; --accent:#5865f2; --danger:#e5484d; --ok:#3fb950; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:"Segoe UI",Tahoma,sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 60px; }
+  .header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+  .badge { font-size:12px; padding:5px 10px; border-radius:99px; background:var(--card); border:1px solid var(--line); color:var(--mute); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .row > * { flex: 1 1 150px; }
+  select, input[type=text], input[type=password] { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#111319; color:var(--text); font-size:15px; }
+  button { padding:10px 14px; border-radius:10px; border:1px solid var(--line); background:#232734; color:var(--text); font-size:14px; font-weight:600; cursor:pointer; }
+  button:hover:not(:disabled) { background:#2d3243; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.danger { color:#ff6b6f; }
+  button.sm { padding:4px 10px; font-size:12px; }
+  .now { display:flex; gap:14px; align-items:center; }
+  .now img { width:84px; height:84px; border-radius:10px; object-fit:cover; background:#111319; }
+  .now .title { font-size:17px; font-weight:700; word-break:break-word; }
+  .now a { color:var(--accent); font-size:13px; text-decoration:none; }
+  .muted { color:var(--mute); font-size:13px; }
+  .bar-wrap { padding:8px 0; cursor:pointer; }
+  .bar { height:7px; border-radius:4px; background:#111319; overflow:hidden; }
+  .bar > div { height:100%; background:var(--accent); width:0; transition:width .3s linear; }
+  .time { display:flex; justify-content:space-between; font-size:12px; color:var(--mute); direction:ltr; }
+  ul { list-style:none; margin:0; padding:0; max-height:340px; overflow-y:auto; }
+  li { display:flex; align-items:center; gap:10px; padding:9px 6px; border-bottom:1px solid var(--line); }
+  li:last-child { border-bottom:0; }
+  li .n { width:24px; color:var(--mute); text-align:center; }
+  li .t { flex:1; word-break:break-word; }
+  .msg { min-height:20px; font-size:14px; margin-top:8px; color:var(--danger); }
+  .msg.ok { color:var(--ok); }
+  .hidden { display:none !important; }
+  label.small { display:block; font-size:13px; color:var(--mute); margin-bottom:6px; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .login { max-width:360px; margin:14vh auto 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loginView" class="login hidden">
+    <h1>🔐 تسجيل الدخول</h1>
+    <div class="card">
+      <label class="small" for="pass">كلمة سر الداشبورد</label>
+      <input type="password" id="pass" value="Aa123456">
+      <div style="height:10px"></div>
+      <button class="primary" id="loginBtn" style="width:100%">دخول</button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+  </div>
+
+  <div id="mainView" class="hidden">
+    <div class="header">
+      <h1 style="margin:0; font-size:20px">🎵 <span id="botName">iron monkey</span></h1>
+      <div style="display:flex; gap:8px; align-items:center">
+        <span class="badge" id="statusBadge">🟢 متصل</span>
+        <span class="badge">🖥️ المستضيف: <strong id="nodeBadge" style="color:#fff">...</strong></span>
+        <span class="badge">⚡ <span id="pingBadge">0</span>ms</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><label class="small">السيرفر</label><select id="guildSel"></select></div>
+        <div><label class="small">الروم الصوتي</label><select id="chanSel"></select></div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="row">
+        <input type="text" id="query" placeholder="اسم الأغنية أو رابط (يوتيوب / ساوند كلاود / mp3)" style="flex:3 1 260px">
+        <button class="primary" id="playBtn" style="flex:1 1 100px">▶ تشغيل</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="muted" id="idle">ما فيه شي يشتغل الحين</div>
+      <div id="playing" class="hidden">
+        <div class="now">
+          <img id="thumb" alt="">
+          <div style="flex:1">
+            <div class="title" id="songTitle"></div>
+            <a id="songLink" target="_blank">فتح الرابط</a>
+            <div class="muted" id="chanName"></div>
+          </div>
+        </div>
+        <div class="bar-wrap" id="seekBar">
+          <div class="bar"><div id="prog"></div></div>
+        </div>
+        <div class="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <button id="bToggle">⏯ إيقاف / كمل</button>
+        <button id="bSkip">⏭ تخطي</button>
+        <button id="bShuffle">🔀 خلط</button>
+        <button id="bStop" class="danger">⏹ إيقاف</button>
+      </div>
+      <div style="height:14px"></div>
+      <div class="row">
+        <div>
+          <label class="small">الصوت: <span id="volVal">50</span>%</label>
+          <input type="range" id="vol" min="1" max="100" value="50">
+        </div>
+        <div>
+          <label class="small">التكرار</label>
+          <select id="loopSel">
+            <option value="0">إيقاف</option>
+            <option value="1">الأغنية</option>
+            <option value="2">القائمة</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+        <div style="font-weight:700">قائمة التشغيل (<span id="qCount">0</span>)</div>
+        <button class="sm danger hidden" id="clearBtn">مسح القائمة</button>
+      </div>
+      <ul id="queueList"></ul>
+      <div class="muted" id="emptyQ">القائمة فاضية</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let guildId = null, pollTimer = null, isRefreshing = false, lastChannels = "";
+let curSec = 0, durSec = 0, isPaused = true;
+
+async function api(path, method = "GET", body) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 7000);
+  try {
+    const r = await fetch(path, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+    if (r.status === 401 && path !== "/api/login") { showLogin(); throw new Error("سجل دخول"); }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "صار خطأ");
+    $("statusBadge").textContent = "🟢 متصل";
+    return d;
+  } catch (e) {
+    if (e.name === "AbortError") $("statusBadge").textContent = "🔴 جاري الاتصال...";
+    throw e;
+  } finally { clearTimeout(t); }
+}
+
+function say(t, ok) { const m = $("msg"); m.textContent = t || ""; m.className = "msg" + (ok ? " ok" : ""); }
+function fmt(s) { s = Math.max(0, Math.floor(s || 0)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); }
+function showLogin() { clearTimeout(pollTimer); $("mainView").classList.add("hidden"); $("loginView").classList.remove("hidden"); }
+
+async function login() {
+  try { await api("/api/login", "POST", { password: $("pass").value }); $("loginMsg").textContent = ""; start(); }
+  catch (e) { $("loginMsg").textContent = e.message; }
+}
+
+async function start() {
+  try {
+    const d = await api("/api/guilds");
+    $("loginView").classList.add("hidden"); $("mainView").classList.remove("hidden");
+    if (d.botName) $("botName").textContent = d.botName;
+    if (d.node) $("nodeBadge").textContent = d.node;
+    if (d.ping >= 0) $("pingBadge").textContent = d.ping;
+    const sel = $("guildSel"); sel.textContent = "";
+    (d.guilds || []).forEach(g => sel.add(new Option(g.name, g.id)));
+    guildId = d.guilds?.[0]?.id ?? null;
+    if (!guildId) return say("البوت مو داخل أي سيرفر");
+    loop();
+  } catch (e) {}
+}
+
+async function loop() { await refresh(); clearTimeout(pollTimer); pollTimer = setTimeout(loop, 2000); }
+
+async function refresh() {
+  if (!guildId || isRefreshing) return;
+  isRefreshing = true;
+  try {
+    const d = await api("/api/guild/" + guildId);
+    if (d.node) $("nodeBadge").textContent = d.node;
+    if (d.ping >= 0) $("pingBadge").textContent = d.ping;
+
+    const key = JSON.stringify(d.channels);
+    if (key !== lastChannels) {
+      lastChannels = key;
+      const cs = $("chanSel"), keep = cs.value; cs.textContent = "";
+      d.channels.forEach(c => cs.add(new Option("🔊 " + c.name + (c.membersCount ? ` (${c.membersCount})` : ""), c.id)));
+      if (keep && d.channels.some(c => c.id === keep)) cs.value = keep;
+      else if (d.queue?.channelId) cs.value = d.queue.channelId;
+    }
+
+    const q = d.queue;
+    const has = !!(q && q.songs && q.songs.length);
+    $("idle").classList.toggle("hidden", has);
+    $("playing").classList.toggle("hidden", !has);
+    $("emptyQ").classList.toggle("hidden", has);
+    $("clearBtn").classList.toggle("hidden", !(has && q.songs.length > 1));
+    $("qCount").textContent = has ? q.songs.length : 0;
+
+    const list = $("queueList"); list.textContent = "";
+    if (has) {
+      const s = q.songs[0];
+      curSec = q.currentTime || 0; durSec = s.duration || 0; isPaused = !!q.paused;
+      $("songTitle").textContent = (q.paused ? "⏸ " : "▶ ") + s.name;
+      $("songLink").href = s.url || "#";
+      $("chanName").textContent = q.channel ? "🔊 " + q.channel : "";
+      const th = $("thumb"); th.style.visibility = s.thumbnail ? "visible" : "hidden";
+      if (s.thumbnail && th.src !== s.thumbnail) th.src = s.thumbnail;
+      updateBar();
+
+      if (document.activeElement !== $("vol")) { $("vol").value = q.volume; $("volVal").textContent = q.volume; }
+      if (document.activeElement !== $("loopSel")) $("loopSel").value = q.repeatMode;
+
+      q.songs.forEach((song, i) => {
+        const li = document.createElement("li");
+        const n = document.createElement("span"); n.className = "n"; n.textContent = i === 0 ? "▶" : i;
+        const t = document.createElement("span"); t.className = "t"; t.textContent = song.name;
+        const du = document.createElement("span"); du.className = "muted"; du.textContent = song.formattedDuration || "";
+        li.append(n, t, du);
+        if (i > 0) {
+          const jb = document.createElement("button"); jb.className = "sm"; jb.textContent = "تشغيل"; jb.onclick = () => act("jump", i);
+          const rb = document.createElement("button"); rb.className = "sm danger"; rb.textContent = "حذف"; rb.onclick = () => act("remove", i);
+          li.append(jb, rb);
+        }
+        list.append(li);
+      });
+    } else { isPaused = true; }
+  } catch (e) {} finally { isRefreshing = false; }
+}
+
+function updateBar() {
+  $("cur").textContent = fmt(curSec);
+  $("dur").textContent = fmt(durSec);
+  $("prog").style.width = durSec ? Math.min(100, (curSec / durSec) * 100) + "%" : "0%";
+}
+setInterval(() => { if (!isPaused && durSec > 0 && curSec < durSec) { curSec++; updateBar(); } }, 1000);
+
+async function act(action, value) { try { await api("/api/guild/" + guildId + "/action", "POST", { action, value }); say(""); refresh(); } catch (e) { say(e.message); } }
+
+async function play() {
+  const query = $("query").value.trim(), channelId = $("chanSel").value;
+  if (!query) return say("اكتب اسم أغنية أو رابط");
+  $("playBtn").disabled = true; say("جاري التشغيل...", true);
+  try { await api("/api/guild/" + guildId + "/play", "POST", { channelId, query }); $("query").value = ""; say("تمت الإضافة ✅", true); refresh(); }
+  catch (e) { say(e.message); }
+  $("playBtn").disabled = false;
+}
+
+$("seekBar").onclick = (e) => {
+  if (!durSec) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const sec = Math.floor(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * durSec);
+  curSec = sec; updateBar(); act("seek", sec);
+};
+
+$("loginBtn").onclick = login;
+$("pass").addEventListener("keydown", e => e.key === "Enter" && login());
+$("playBtn").onclick = play;
+$("query").addEventListener("keydown", e => e.key === "Enter" && play());
+$("guildSel").onchange = e => { guildId = e.target.value; lastChannels = ""; refresh(); };
+$("bToggle").onclick = () => act("toggle");
+$("bSkip").onclick = () => act("skip");
+$("bStop").onclick = () => act("stop");
+$("bShuffle").onclick = () => act("shuffle");
+$("clearBtn").onclick = () => act("clear");
+$("vol").oninput = e => ($("volVal").textContent = e.target.value);
+$("vol").onchange = e => act("volume", e.target.value);
+$("loopSel").onchange = e => act("loop", e.target.value);
+
+start();
+</script>
+</body>
+</html>
